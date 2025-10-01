@@ -1,0 +1,130 @@
+
+using System.Drawing.Drawing2D;
+
+namespace ORDERING_SYSTEM
+{
+    public class Menu
+    {
+        public Dictionary<string, (decimal Price, string ImageUrl)> MenuItems { get; private set; }
+
+        public Menu()
+        {
+            MenuItems = new Dictionary<string, (decimal, string)>
+            {
+                { "Cheeseburger",(65,"https://i.imgur.com/v5l0Ds2.jpg") },
+                { "Quarter Pounder with Cheese",(145,"https://imgur.com/svDrjkq.jpg") },
+                { "1pc Chicken with Rice",(99,"https://imgur.com/zEDRQGU.jpg") },
+                { "LLESpaghetti",(145, "https://imgur.com/RqCChqW.jpg") },
+                { "Mushroom Soup/dry bread",(100, "https://imgur.com/Uk2lW2v.jpg") },
+                { "2pc Chicken LLE with Rice", (120, "https://imgur.com/KuPVjqc.jpg") },
+                { "1pc Chicken w/Rice & Coke Float Meal", (130, "https://imgur.com/OuMEYEc.jpg") },
+                { "Ice Cream Sundae with Chocolate",(85, "https://imgur.com/kyKxMUO.jpg") },
+                { "Double Cheese", (95, "https://imgur.com/yRIwYpj.jpg") },
+                { "Coke Float", (55, "https://imgur.com/iVSjawM.jpg") },
+                { "Hot Chocolate", (50, "https://imgur.com/pL1oz0n.jpg") },
+                { "8pc Chicken Bucket", (715, "https://imgur.com/y1FrTAT.jpg") },
+                { "Large Fries", (150, "https://imgur.com/ZCp0dV4.jpg") },
+            };
+        }
+
+        public void CreateMenuButtons(FlowLayoutPanel flowMenu, Action<string, decimal> addItemToOrder)
+        {
+            flowMenu.Controls.Clear();
+
+            foreach (var item in MenuItems)
+            {
+                string itemName = item.Key;
+                decimal price = item.Value.Price;
+                string imageUrl = item.Value.ImageUrl;
+
+                Panel panel = new()
+                {
+                    Width = 145,
+                    Height = 145,
+                    Margin = new Padding(7),
+                    BackColor = Color.White,
+                    Cursor = Cursors.Hand
+                };
+
+                //Rounded corners
+                panel.Paint += (s, e) =>
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                    using var pen = new Pen(Color.LightGray, 2);
+
+                    var rect = panel.ClientRectangle;
+                    rect.Inflate(-3, -3); 
+
+                    g.DrawRoundedRectangle(pen, rect, 10);
+                };
+
+                //Hover effect
+                panel.MouseEnter += (s, e) => panel.BackColor = Color.LightYellow;
+                panel.MouseLeave += (s, e) => panel.BackColor = Color.White;
+
+                PictureBox pic = new()
+                {
+                    Width = 130,
+                    Height = 90,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Top = 5,
+                    Left = 10
+                };
+
+                try
+                {
+                    pic.LoadAsync(imageUrl);
+                }
+                catch
+                {
+                    pic.Image = SystemIcons.Warning.ToBitmap();
+                }
+                pic.LoadCompleted += (s, e) =>
+                {
+                    if (e.Error != null)
+                        pic.Image = SystemIcons.Warning.ToBitmap();
+                };
+
+                Label lbl = new()
+                {
+                    Text = $"{itemName}\n₱{price}",
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    ForeColor = Color.Black,
+                    Width = panel.Width,
+                    Top = 100,
+                    Height = 45
+                };
+
+                //Click handler (shared)
+                void HandleClick(object? sender, EventArgs e) => addItemToOrder(itemName, price);
+                panel.Click += HandleClick;
+                pic.Click += HandleClick;
+                lbl.Click += HandleClick;
+
+                panel.Controls.Add(pic);
+                panel.Controls.Add(lbl);
+                flowMenu.Controls.Add(panel);
+            }
+        }
+    }
+
+    //Extension method for rounded rectangles
+    public static class GraphicsExtensions
+    {
+        public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle rect, int radius)
+        {
+            using GraphicsPath path = new GraphicsPath();
+            int d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            g.DrawPath(pen, path);
+        }
+    }
+}
